@@ -50,18 +50,60 @@ The launcher temporarily swaps Feeder/observer files, holds the in-process
 consumer outside ReShade's add-on search directory, and runs that consumer only
 in `host64`. Current RHI runtimes/models are copied locally into that helper
 folder. It chooses Kernel → Feed, style 0, Upscaled hook and no neural upscaling,
-while preserving shader parameters and neural intensity. Helper hotkeys are
-disabled; adjust intensity in the baseline settings between sessions. A temporary
+while preserving shader parameters and neural intensity. A temporary
 Windows GPU preference selects the high-performance adapter for the helper and
 is restored on exit. On multi-NVIDIA-GPU systems both processes must use the same
 GPU; this package has only been tested on an Intel/NVIDIA laptop.
 
 RHI baseline: OpenGL, ReShade add-on support, Generic Depth enabled with **Match
 resolution exactly**, and `DLSS5_MV_PROVIDER=3` with Lumenite Kernel installed.
+**Enable only Lumenite Kernel → DLSS5 Feed.** The early controller requires
+exactly those two techniques. Enabling RTAO or another technique makes it skip
+early processing; the ordinary ReShade chain runs after UI/HUD drawing, and
+DLSS5 can affect overlays again as well. Other effects may blur, darken or
+recolor UI according to their shader behavior. Additional effects alongside
+protected early processing are not currently supported.
+
 The launcher restores the original add-ons/configuration after exit. It does
 not repair the consumer's internal lifecycle: it bypasses recreation by using a
 fresh process. Helper shutdown can require forced termination through Feeder's
 existing shutdown path; graceful consumer teardown is not established.
+
+## Why the neural settings UI differs from normal RHI
+
+In normal RHI use, the consumer runs inside Firestorm and displays the full
+**DLSS 5 Neural Rendering** panel in its ReShade overlay. This launcher moves
+the consumer into the hidden helper process. Firestorm's overlay therefore
+shows the helper client's controls instead. Under Add-ons → DLSS 5 Feed,
+**DLSS 5 neural-rendering settings (on the host)** mirrors consumer settings.
+Change a value and click **Apply to the DLSS 5 host**. The client closes the
+helper, writes its `ReShade.ini` after shutdown, and starts a replacement that
+loads the new values. Slider edits alone do not affect the active consumer.
+Expect a pause while neural output recovers. **Reload from host** rereads the
+stored helper settings and discards unapplied panel edits. Keep the tested
+style 0, Upscaled hook and neural upscaling off unless testing alternatives.
+
+The helper's own ReShade overlay and neural toggle/screenshot hotkeys are
+disabled by this launcher's windowless setup. Upstream panel-casting controls
+are separate from the working settings mirror and are not validated by this
+integration. A different UI does not imply older binaries.
+
+The helper uses the consumer/runtime files supplied in this viewer's folder.
+Another normal Firestorm installation is separate and is not automatically
+synchronized. At each launch, the `[RenoDX.DLSS5]` section of the selected
+viewer's root `ReShade.ini` is copied into the helper configuration. Values such
+as intensity are preserved, with these deliberate overrides: neural uplift on,
+style 0, Upscaled hook, neural upscaling off, and neural hotkeys disabled.
+Different styles can produce different appearances even with identical binaries.
+
+To change a supported baseline value such as intensity, quit normally, wait for
+the launcher to restore settings, then edit that value in the viewer's root
+`ReShade.ini` before relaunching. Host-panel changes work after Apply/restart
+within the session, but the client does not copy them back to this baseline.
+Do not edit INI files while a session is active: shutdown restores the saved
+viewer baseline. `host64/ReShade.ini` is generated again on each launcher session,
+so changes there are not persistent across sessions. The forced launch settings
+listed above cannot be changed simply by editing their baseline values.
 
 ## Recovery and removal
 

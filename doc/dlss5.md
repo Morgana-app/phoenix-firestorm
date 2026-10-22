@@ -42,6 +42,12 @@ world into the existing client-sized effect domain, invokes ReShade's public
 back only into the world rectangle. It handles GL orientation and preserves
 touched state. Viewer overlay drawing follows that work.
 
+The current early-chain guard accepts exactly one Lumenite Kernel and one
+DLSS5 Feed, with no other enabled techniques. Enabling RTAO or any additional
+technique makes early processing skip; the ordinary chain runs after overlays,
+so DLSS5 can affect UI again too. Additional effects alongside protected early
+processing are not supported by this preview.
+
 The controller suppresses repetition of the early effects at ordinary
 presentation and records duplicate witnesses. Resource and extent checks guard
 execution. During startup, resize recovery or rejected frames, normal
@@ -120,6 +126,9 @@ resize preview should not be distributed as the working helper route.
 
 ## TODO and known limits
 
+- Support selected additional world effects, such as RTAO, before overlay drawing
+  with explicit ordering and resource/state checks. The current two-technique
+  guard must not simply be removed without validating the expanded chain.
 - Verify the downloadable viewer and integration on a fresh install, including
   normal-profile use, component compatibility and hybrid-GPU selection.
 - Exercise repeated resize dragging, minimize/restore, device/context loss,
@@ -133,6 +142,10 @@ resize preview should not be distributed as the working helper route.
 - Improve failure/recovery diagnostics and measure comparable-scene performance
   across more hardware. A helper's evaluation/present ratio describes its own
   window, so it must not be treated as the viewer's frame ratio.
+- Validate the existing Feeder host-settings mirror and improve persistent
+  synchronization with the viewer baseline. Its Apply button writes the host INI
+  and restarts the helper; changes are not instantaneous or copied back to the
+  baseline, which is used to regenerate host settings next launcher session.
 - Verify dependency redistribution terms before broader releases, and consider
   signed installers and durable release downloads after fresh-install checks.
 

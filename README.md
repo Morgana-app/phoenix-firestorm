@@ -131,11 +131,49 @@ scene-ready notification.
 
 5. **Start `Launch-FirestormNeural.cmd` in the modified viewer folder.**
 
+   The integration installer creates this launcher; the viewer Setup executable
+   alone does not create it.
+
    This is the normal-use launcher and uses your normal Firestorm profile.
    Keep its console open until you quit the viewer normally. It selects the
    helper route, preserves shader parameters and neural intensity, and restores
    the original add-ons/settings after exit. It temporarily selects the helper's
    high-performance GPU; both processes must render on the same compatible GPU.
+
+### Supported effects and UI protection
+
+**UI-protection requirement: enable only Lumenite Kernel → DLSS5 Feed.** The
+early pass accepts exactly those two techniques. Enabling RTAO or any additional
+ReShade technique makes it skip early processing; the normal chain then runs
+after HUD/UI drawing, so DLSS5 can affect the overlays again too. Other shaders
+may blur, darken or recolor UI depending on what they do. Additional effects
+alongside protected early processing are not currently supported.
+
+### Why the DLSS5 settings UI looks different
+
+In a normal RHI installation, the neural consumer runs inside Firestorm and
+provides the full **DLSS 5 Neural Rendering** panel in its ReShade overlay.
+This integration runs the consumer in a separate, hidden helper process; the
+viewer overlay shows the helper client's controls instead, including
+**DLSS 5 neural-rendering settings (on the host)** under Add-ons → DLSS 5 Feed.
+This is a settings mirror: change a value and click **Apply to the DLSS 5 host**
+to write it and restart the helper. Moving a slider alone does not change the
+active consumer; **Reload from host** rereads the stored values. The helper's own
+overlay/hotkeys are disabled by this launcher's windowless setup. The different
+panel is not evidence of an older DLSS5 version. The helper uses consumer/runtime
+files from the modified viewer folder; a separate normal installation is not
+automatically synchronized.
+
+At launch, the helper receives the `[RenoDX.DLSS5]` settings from the modified
+viewer's `ReShade.ini`, preserving values such as intensity while selecting
+neural uplift on, **style 0**, **Upscaled** hook and neural upscaling off. A
+normal installation using another style can therefore look different with the
+same binaries. Host-panel changes take effect after Apply restarts the helper,
+with a pause while neural output recovers. Keep the tested style/hook/upscaling
+values unless deliberately testing alternatives. Changes made there are not
+copied back to the viewer baseline: the next launcher session regenerates
+`host64/ReShade.ini`. For persistent supported values such as intensity, edit
+the viewer's root `ReShade.ini` between sessions, after normal exit/restoration.
 
 For recovery, removal and detailed prerequisites, read the
 [package guide](tools/dlss5-observer/PACKAGE-README.md).

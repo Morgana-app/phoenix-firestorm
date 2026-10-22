@@ -12,6 +12,33 @@ or [source/package guide](PACKAGE-README.md) for setup. Normal use starts
 until normal exit restores the original configuration. The viewer folder must
 be writable by your user, or setup and launching require administrator execution.
 
+## Effect-chain restriction
+
+UI protection requires exactly **Lumenite Kernel → DLSS5 Feed**, with no other
+enabled techniques. `early_neural::run()` rejects a chain containing any extra
+technique, such as RTAO. Processing then falls back to the ordinary ReShade chain
+after UI/HUD drawing; this also removes DLSS5's early UI protection. Other
+effects may affect overlays without necessarily blurring them. Supporting
+additional effects requires extending the early-chain policy and validation.
+
+## ReShade UI in helper mode
+
+The normal in-process consumer supplies the full **DLSS 5 Neural Rendering**
+panel. Here the consumer runs in a hidden helper, whose overlay/hotkeys are
+disabled; the viewer shows the helper client's controls instead, including the
+**DLSS 5 neural-rendering settings (on the host)** mirror under Add-ons → DLSS 5
+Feed. Its **Apply to the DLSS 5 host** button writes settings and restarts the
+helper; slider edits alone do not apply them. **Reload from host** rereads its
+stored values. This UI difference does not establish a version difference.
+Consumer settings are copied
+from the viewer's root `ReShade.ini` at launch, with style 0, Upscaled hook,
+neural uplift on and neural upscaling off selected. Changes applied through the
+host panel are not copied back to the viewer baseline, so the next launcher
+session resets them. Instant live updates and persistent synchronization remain
+unimplemented. See the
+[package guide](PACKAGE-README.md#why-the-neural-settings-ui-differs-from-normal-rhi)
+for persistent settings changes between sessions.
+
 ## Build and tests
 
 Requires Windows x64, MSVC, Windows SDK, CMake, ReShade 6.8.0 source/headers,
