@@ -148,7 +148,9 @@ LLFrameTimer gRecentMemoryTime;
 LLFrameTimer gAssetStorageLogTime;
 
 // Rendering stuff
-void render_ui(F32 zoom_factor = 1.f, int subfield = 0);
+// <FS:DLSS> Declaration shared via llviewerdisplay.h.
+// void render_ui(F32 zoom_factor = 1.f, int subfield = 0);
+// </FS:DLSS>
 void swap();
 void render_hud_attachments();
 void render_ui_3d();
@@ -484,6 +486,9 @@ static void update_tp_display(bool minimized)
 // Paint the display!
 void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
 {
+    // <FS:DLSS> Preserve the caller's purpose before the deferred-snapshot rewrite.
+    const auto scene_context = fsSceneContext(fsSceneOriginalPurpose(for_snapshot));
+    // </FS:DLSS>
     LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("Render");
     LL_PROFILE_GPU_ZONE("Render");
 
@@ -792,7 +797,10 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
     if (gDisconnected)
     {
         LLAppViewer::instance()->pingMainloopTimeout("Display:Disconnected");
-        render_ui();
+        // <FS:DLSS> Disconnected rendering is never an interactive-scene signal.
+        // render_ui();
+        render_ui({scene_context.display_serial, FS_SCENE_DISCONNECTED});
+        // </FS:DLSS>
         swap();
     }
 
@@ -1178,7 +1186,10 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
         LLAppViewer::instance()->pingMainloopTimeout("Display:RenderUI");
         if (!for_snapshot)
         {
-            render_ui();
+            // <FS:DLSS> Carry the original render purpose, including deferred snapshots.
+            // render_ui();
+            render_ui(scene_context);
+            // </FS:DLSS>
             swap();
         }
 
@@ -1611,7 +1622,9 @@ bool setup_hud_matrices(const LLRect& screen_region)
     return true;
 }
 
-void render_ui(F32 zoom_factor, int subfield)
+// <FS:DLSS> void render_ui(F32 zoom_factor, int subfield)
+void render_ui(const FSSceneRenderContext& scene_context, F32 zoom_factor, int subfield)
+// </FS:DLSS>
 {
     LLPerfStats::RecordSceneTime T ( LLPerfStats::StatType_t::RENDER_UI ); // render time capture - Primary UI stat can have HUD time overlap (TODO)
     LL_PROFILE_ZONE_SCOPED_CATEGORY_UI; //LL_RECORD_BLOCK_TIME(FTM_RENDER_UI);
@@ -1637,7 +1650,9 @@ void render_ui(F32 zoom_factor, int subfield)
     }
 
     // apply gamma correction and post effects
-    gPipeline.renderFinalize();
+    // <FS:DLSS> gPipeline.renderFinalize();
+    gPipeline.renderFinalize(scene_context);
+    // </FS:DLSS>
 
     {
         LLGLState::checkStates();

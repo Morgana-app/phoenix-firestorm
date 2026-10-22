@@ -114,6 +114,7 @@ set(viewer_SOURCE_FILES
     fsdata.cpp
     fsdroptarget.cpp
     fsexportperms.cpp
+    fsscenesignal.cpp
     fsfloateraddtocontactset.cpp
     fsfavoritegroups.cpp
     fsinventorycustomtabs.cpp
@@ -982,6 +983,7 @@ set(viewer_HEADER_FILES
     fsdata.h
     fsdroptarget.h
     fsexportperms.h
+    fsscenesignal.h
     fsfloateraddtocontactset.h
     fsfavoritegroups.h
     fsinventorycustomtabs.h

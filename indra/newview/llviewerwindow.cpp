@@ -241,7 +241,9 @@
 //
 // Globals
 //
-void render_ui(F32 zoom_factor = 1.f, int subfield = 0);
+// <FS:DLSS> Declaration shared via llviewerdisplay.h.
+// void render_ui(F32 zoom_factor = 1.f, int subfield = 0);
+// </FS:DLSS>
 void swap();
 
 extern bool gDebugClicks;
@@ -6375,7 +6377,10 @@ bool LLViewerWindow::rawSnapshot(LLImageRaw *raw, S32 image_width, S32 image_hei
                 {
                     // Required for showing the GUI in snapshots and performing bloom composite overlay
                     // Call even if show_ui is false
-                    render_ui(scale_factor, subfield);
+                    // <FS:DLSS> Direct non-deferred snapshot UI pass.
+                    // render_ui(scale_factor, subfield);
+                    render_ui(fsSceneContext(FS_SCENE_SNAPSHOT), scale_factor, subfield);
+                    // </FS:DLSS>
                     swap();
                 }
 

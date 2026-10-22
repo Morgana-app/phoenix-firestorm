@@ -51,6 +51,9 @@ class LLCullResult;
 class LLVOAvatar;
 class LLVOPartGroup;
 class LLGLSLShader;
+// <FS:DLSS> Optional notification context; no neural/ReShade dependency.
+struct FSSceneRenderContext;
+// </FS:DLSS>
 class LLDrawPoolAlpha;
 class LLSettingsSky;
 
@@ -151,7 +154,9 @@ public:
     void generateImpostor(LLVOAvatar* avatar, bool preview_avatar = false, bool for_profile = false, LLViewerObject* specific_attachment = nullptr);
 
     void bindScreenToTexture();
-    void renderFinalize();
+    // <FS:DLSS> void renderFinalize();
+    void renderFinalize(const FSSceneRenderContext& scene_context);
+    // </FS:DLSS>
     void copyScreenSpaceReflections(LLRenderTarget* src, LLRenderTarget* dst);
     void generateLuminance(LLRenderTarget* src, LLRenderTarget* dst);
     void generateExposure(LLRenderTarget* src, LLRenderTarget* dst, bool use_history = true);

@@ -8919,8 +8919,13 @@ void LLPipeline::renderDoF(LLRenderTarget* src, LLRenderTarget* dst)
     }
 }
 
-void LLPipeline::renderFinalize()
+// <FS:DLSS> void LLPipeline::renderFinalize()
+void LLPipeline::renderFinalize(const FSSceneRenderContext& scene_context)
+// </FS:DLSS>
 {
+    // <FS:DLSS> Notification is inert on non-Windows builds.
+    (void)scene_context;
+    // </FS:DLSS>
     llassert(!gCubeSnapshot);
     LLVertexBuffer::unbind();
     LLGLState::checkStates();
@@ -9022,7 +9027,11 @@ void LLPipeline::renderFinalize()
     };
     // </FS:Beq>
     // <FS:Beq> new shader for snapshot frame helper
-    if (renderSnapshotFrame(auxActiveBuffer, auxTargetBuffer))
+    // <FS:DLSS> Retain whether a snapshot border was baked into this scene.
+    // if (renderSnapshotFrame(auxActiveBuffer, auxTargetBuffer))
+    const bool snapshot_frame_applied = renderSnapshotFrame(auxActiveBuffer, auxTargetBuffer);
+    if (snapshot_frame_applied)
+    // </FS:DLSS>
     {
         std::swap(auxActiveBuffer, auxTargetBuffer);
     };
@@ -9080,6 +9089,54 @@ void LLPipeline::renderFinalize()
     }
 
     gDeferredPostNoDoFNoiseProgram.unbind();
+
+    // <FS:DLSS> Notification only: scene draw completed, protected overlays not drawn.
+#if LL_WINDOWS
+    if (fsSceneSignalAvailable())
+    {
+        FSSceneReadyV1 packet = {};
+        packet.struct_size = sizeof(packet);
+        packet.abi_version = FS_SCENE_ABI_VERSION;
+        packet.display_serial = scene_context.display_serial;
+        packet.scene_serial = fsNextSceneSerial();
+        packet.context_cookie = reinterpret_cast<uintptr_t>(wglGetCurrentContext());
+        packet.purpose = scene_context.purpose;
+        if (LLStartUp::getStartupState() == STATE_STARTED) packet.conditions |= FS_SCENE_STARTED;
+        if (!gDisconnected) packet.conditions |= FS_SCENE_CONNECTED;
+        if (gDisplaySwapBuffers) packet.conditions |= FS_SCENE_PRESENT_INTENDED;
+        if (LLViewerCamera::sCurCameraID == LLViewerCamera::CAMERA_WORLD) packet.conditions |= FS_SCENE_WORLD_CAMERA;
+        if (LLApp::isExiting() || LLAppViewer::instance()->quitRequested() || LLAppViewer::instance()->logoutRequestSent())
+            packet.conditions |= FS_SCENE_QUITTING;
+        if (gDoDisconnect) packet.conditions |= FS_SCENE_DISCONNECTING;
+        if (snapshot_frame_applied) packet.conditions |= FS_SCENE_CAPTURE_FRAME;
+        if (RenderBufferVisualization > -1) packet.conditions |= FS_SCENE_BUFFER_DEBUG;
+        if (gCubeSnapshot) packet.conditions |= FS_SCENE_CUBE;
+        if (gRestoreGL) packet.conditions |= FS_SCENE_RESTORE_GL;
+        const LLRect& world = gViewerWindow->getWorldViewRectRaw();
+        packet.world_rect[0] = world.mLeft;
+        packet.world_rect[1] = world.mBottom;
+        packet.world_rect[2] = world.getWidth();
+        packet.world_rect[3] = world.getHeight();
+        glGetIntegerv(GL_VIEWPORT, packet.viewport);
+        RECT client = {};
+        if (GetClientRect(WindowFromDC(wglGetCurrentDC()), &client))
+        {
+            packet.client_extent[0] = client.right - client.left;
+            packet.client_extent[1] = client.bottom - client.top;
+        }
+        if (sourceBuffer->getNumTextures()) packet.color_texture = sourceBuffer->getTexture();
+        packet.color_target = LLTexUnit::getInternalType(sourceBuffer->getUsage());
+        packet.color_extent[0] = sourceBuffer->getWidth();
+        packet.color_extent[1] = sourceBuffer->getHeight();
+        packet.depth_texture = mRT->deferredScreen.getDepth();
+        packet.depth_target = LLTexUnit::getInternalType(mRT->deferredScreen.getUsage());
+        packet.depth_extent[0] = mRT->deferredScreen.getWidth();
+        packet.depth_extent[1] = mRT->deferredScreen.getHeight();
+        packet.rejection_reasons = fsSceneRejections(packet);
+        fsDispatchSceneReady(packet);
+    }
+#endif
+    // </FS:DLSS>
 
     gGL.setSceneBlendType(LLRender::BT_ALPHA);
 

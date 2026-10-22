@@ -27,6 +27,11 @@
 #ifndef LL_LLVIEWERDISPLAY_H
 #define LL_LLVIEWERDISPLAY_H
 
+// <FS:DLSS> Explicit render-purpose context for the optional scene notification.
+#include "fsscenesignal.h"
+void render_ui(const FSSceneRenderContext& scene_context, F32 zoom_factor = 1.f, int subfield = 0);
+// </FS:DLSS>
+
 class LLPostProcess;
 
 void display_startup();
